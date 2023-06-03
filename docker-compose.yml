@@ -1,0 +1,80 @@
+name: esc
+
+services:
+  spark-master:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - 8080:8080 # Web UI
+      - 7077:7077 # Master Port
+    volumes:
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+
+  spark-worker:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    deploy:
+      replicas: 2
+    depends_on:
+      - spark-master
+
+  mongodb-primary:
+    image: bitnami/mongodb:latest
+    hostname: mongodb
+    environment:
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb
+      - MONGODB_ROOT_PASSWORD=admin
+      - MONGODB_REPLICA_SET_KEY=replicaset
+      - MONGODB_EXTRA_FLAGS=--wiredTigerCollectionBlockCompressor=zstd --wiredTigerJournalCompressor=zstd
+    ports:
+      - 27017:27017 # MongoDB
+
+  mongodb-secondary:
+    image: bitnami/mongodb:latest
+    environment:
+      - MONGODB_REPLICA_SET_MODE=secondary
+      - MONGODB_PORT_NUMBER=27018
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb
+      - MONGODB_INITIAL_PRIMARY_PORT_NUMBER=27017
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=admin
+      - MONGODB_REPLICA_SET_KEY=replicaset
+      - MONGODB_EXTRA_FLAGS=--wiredTigerCollectionBlockCompressor=zstd --wiredTigerJournalCompressor=zstd
+    ports:
+      - 27018:27018 # MongoDB
+    depends_on:
+      - mongodb-primary
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    environment:
+      - ME_CONFIG_MONGODB_URL=mongodb://root:admin@mongodb:27017?replicaSet=replicaset
+    ports:
+      - 8081:8081 # Web UI
+    depends_on:
+      - mongodb-primary
+
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - 5672:5672 # AMQP
+      - 15672:15672 # Web UI
