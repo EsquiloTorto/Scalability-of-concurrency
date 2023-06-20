@@ -1,4 +1,5 @@
 import argparse
+from random import randint
 
 parser = argparse.ArgumentParser(description="Highway Simulator")
 
@@ -7,7 +8,7 @@ parser.add_argument(
     "--name",
     type=str,
     help="Highway name",
-    default="Highway Simulator",
+    default=f"Highway {randint(0, 1000)}",
 )
 
 parser.add_argument(
@@ -104,14 +105,6 @@ parser.add_argument(
     type=float,
     help="Duration (in milliseconds) of each cycle",
     default=1,
-)
-
-parser.add_argument(
-    "-o",
-    "--output-dir",
-    type=str,
-    help="Output directory",
-    required=False,
 )
 
 parser.add_argument(

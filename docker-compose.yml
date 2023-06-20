@@ -70,11 +70,22 @@ services:
     depends_on:
       - mongodb-primary
 
-  rabbitmq:
-    image: rabbitmq:management-alpine
+  broker:
+    build: ./broker
+    restart: always
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
     ports:
       - 5672:5672 # AMQP
       - 15672:15672 # Web UI
+    depends_on:
+      - mongodb-primary
+
+  simulator:
+    build: ./highway-simulator
+    restart: always
+    deploy:
+      replicas: 1
+    depends_on:
+      - broker

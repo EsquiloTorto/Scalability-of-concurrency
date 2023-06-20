@@ -21,7 +21,7 @@ print("Spark session created")
 
 df = (
     spark.readStream.format("mongodb")
-    .option("database", "simulation")
+    .option("database", "simulator")
     .option("collection", "positions")
     .load()
 )
@@ -30,7 +30,7 @@ df = df.selectExpr("count(*) as count")
 
 query = (
     df.writeStream.format("console")
-    .trigger(processingTime="5 second")
+    .trigger(processingTime="2 second")
     .outputMode("complete")
 )
 

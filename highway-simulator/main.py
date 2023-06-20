@@ -6,6 +6,8 @@ from time import sleep
 from typing import Optional
 from time import time
 from concurrent.futures import ThreadPoolExecutor
+from pika.adapters.blocking_connection import BlockingChannel
+from broker import get_position_channel
 
 
 # Função auxiliar para limitar um valor entre um mínimo e um máximo
@@ -77,16 +79,20 @@ class Simulation:
     params: SimulationParams
     highway: Highway
     cycle: int
-    output_dir: Optional[str] = None
-    num_files: int = 5
     silent: bool = True
+    position_channel: BlockingChannel
 
-    def __init__(self, highway: Highway, params: SimulationParams, output_dir: str, silent: bool = True):
+    def __init__(
+        self,
+        highway: Highway,
+        params: SimulationParams,
+        silent: bool = True,
+    ):
         self.highway = highway
         self.params = params
         self.cycle = 0
-        self.output_dir = output_dir
         self.silent = silent
+        self.position_channel = get_position_channel()
 
     # Método que inicia a simulação
     def run(self):
@@ -95,7 +101,6 @@ class Simulation:
             self.__move_vehicles()
             self.__remove_collisions()
             self.__print_status()
-            self.__report_vehicles()
             sleep(self.params.cycle_duration)
 
             self.cycle += 1
@@ -133,7 +138,11 @@ class Simulation:
                         return v
 
             # Obtém a lista de veículos para o caso atual
-            vehicles = self.highway.incoming_vehicles if vehicle in self.highway.incoming_vehicles else self.highway.outgoing_vehicles
+            vehicles = (
+                self.highway.incoming_vehicles
+                if vehicle in self.highway.incoming_vehicles
+                else self.highway.outgoing_vehicles
+            )
 
             sorted_vehicles = list(
                 reversed(
@@ -143,7 +152,7 @@ class Simulation:
                     )
                 )
             )
-            
+
             # Obtém o índice do veículo atual na lista ordenada
             i = sorted_vehicles.index(vehicle)
 
@@ -222,13 +231,14 @@ class Simulation:
             # Se o veículo saiu da rodovia, remove o veículo da lista
             if vehicle.pos.dist >= self.highway.size:
                 vehicles.remove(vehicle)
+            else:
+                self.__notify_position(vehicle)
 
         # Cria um executor de threads com o número de threads desejado
         with ThreadPoolExecutor(max_workers=self.params.threads) as executor:
             # Move cada veículo em paralelo
             executor.map(move_vehicle, self.highway.incoming_vehicles)
             executor.map(move_vehicle, self.highway.outgoing_vehicles)
-
 
     # Método que remove os veículos que colidiram
     def __remove_collisions(self):
@@ -251,7 +261,8 @@ class Simulation:
 
     # Método que mostra o status da simulação
     def __print_status(self):
-        if self.silent: return
+        if self.silent:
+            return
 
         def print_vehicles(vehicles, reverse=False):
             for lane in range(self.highway.lanes):
@@ -302,35 +313,14 @@ class Simulation:
         print(f"Moving:\t\t{moving_count:04d}")
         print(f"Collisions:\t{collisions_count:04d}")
 
-    # Método que gera o relatório de veículos
-    def __report_vehicles(self):
-        if not self.output_dir:
-            return
+    def __notify_position(self, vehicle: Vehicle):
+        body = f"{self.highway.name},{vehicle.id},{self.cycle},{vehicle.pos.lane},{vehicle.pos.dist}"
 
-        vehicles = [
-            (str(v.id), i, v.pos.lane, v.pos.dist)
-            for i, vs in enumerate(
-                [
-                    self.highway.incoming_vehicles,
-                    self.highway.outgoing_vehicles,
-                ]
-            )
-            for v in vs
-        ]
-
-        path_csv = os.path.join(self.output_dir, f"{self.cycle % self.num_files}.csv")
-        path_tmp = os.path.join(self.output_dir, f"{self.cycle % self.num_files}.tmp")
-
-        os.makedirs(self.output_dir, exist_ok=True)
-
-        with open(path_csv, "w") as f:
-            text = f"{self.cycle} {time()} {self.highway.lanes} {self.highway.size} {self.highway.speed_limit}\n"
-            text += "\n".join([",".join([str(x) for x in v]) for v in vehicles])
-            f.write(text)
-
-        # Cria o arquivo que sinaliza o fim da escrita dos dados
-        with open(path_tmp, "w") as f:
-            pass
+        self.position_channel.basic_publish(
+            exchange="",
+            routing_key="position",
+            body=body,
+        )
 
 
 if __name__ == "__main__":
@@ -357,7 +347,6 @@ if __name__ == "__main__":
     simulation = Simulation(
         highway,
         params,
-        output_dir=args.output_dir,
         silent=not args.print,
     )
     simulation.run()
