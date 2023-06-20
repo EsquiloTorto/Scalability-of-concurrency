@@ -16,6 +16,7 @@ services:
     volumes:
       - ./jobs:/opt/bitnami/spark/jobs
       - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./dashboard:/opt/bitnami/spark/dashboard
 
   spark-worker:
     image: bitnami/spark:latest
@@ -89,3 +90,11 @@ services:
       replicas: 1
     depends_on:
       - broker
+
+  dashboard:
+    build: ./dashboard
+    restart: always
+    ports:
+      - 8501:8501 # Web UI
+    depends_on:
+      - mongodb-primary
