@@ -315,7 +315,7 @@ class Simulation:
         print(f"Collisions:\t{collisions_count:04d}")
 
     def __notify_position(self, vehicle: Vehicle):
-        body = f"{self.highway.name},{vehicle.id},{self.cycle},{vehicle.pos.lane},{vehicle.pos.dist}"
+        body = f"{self.highway.name},{vehicle.id},{time()},{vehicle.pos.lane},{vehicle.pos.dist}"
 
         self.position_channel.basic_publish(
             exchange="",

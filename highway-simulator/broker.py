@@ -1,14 +1,22 @@
 import pika as pk
+from time import sleep
 
 
 def get_rabbitmq_connection():
-    credentials = pk.PlainCredentials("admin", "admin")
-    connection = pk.BlockingConnection(
-        pk.ConnectionParameters(
-            host="broker",
-            credentials=credentials,
-        )
-    )
+    while True:
+        try:
+            credentials = pk.PlainCredentials("admin", "admin")
+            connection = pk.BlockingConnection(
+                pk.ConnectionParameters(
+                    host="broker",
+                    credentials=credentials,
+                )
+            )
+            break
+        except pk.exceptions.AMQPConnectionError as e:
+            print(e)
+            print("Retrying in 1 second...")
+            sleep(1)
 
     return connection
 
