@@ -31,28 +31,58 @@ data = get_data()
 df = pd.DataFrame(list(data.find({})))
 df["_id"] = df["_id"].astype(str) # convert _id to string
 
-# Everytime data changes, will rerun this.
-with data.watch() as stream:
-    # Cooldown is to prevent the page from refreshing too often (but it doesn't throw data away)
-    cooldown = 5
-    start_time = time.time()
+def update_data():
+    global df
+    change_df = pd.DataFrame([insert_change["fullDocument"]])
+    change_df["_id"] = change_df["_id"].astype(str)
 
-    # For each change in the stream
-    for insert_change in stream:
-        # Create a container to hold the data
-        with placeholder.container():
-            # Check if it is still in cooldown and just update the dataframe but don't refresh the page
-            if time.time() - start_time < cooldown:
-                change_df = pd.DataFrame([insert_change["fullDocument"]])
-                change_df["_id"] = change_df["_id"].astype(str)
+    df = pd.concat([df, change_df])
 
-                df = pd.concat([df, change_df])
-                continue
-            
-            # Otherwise, clear the container and refresh the page
-            placeholder.empty()
-            start_time = time.time()
-            placeholder.container()
+def update_numbers_view():
+    with st.container():
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric(label="Total Vehicles", value=df.shape[0])
+        with col2:
+            st.metric(label="Total Highways", value=df["highway"].nunique())
+        with col3:
+            st.metric(label="Above speed limit", value=24)
+        with col4:
+            st.metric(label="With collision risk", value=10)
 
-            st.title("Highway Traffic Data")
-            st.write(df)
+def update_tables_view():
+    with st.container():
+        col1, col2 = st.columns(2, gap='medium')
+        with col1:
+            st.subheader("Vehicles above speed limit")
+            st.dataframe(df)
+        with col2:
+            st.subheader("Vehicles with collision risk")
+            st.dataframe(df)
+
+if __name__ == "__main__":
+    # Everytime data changes, will rerun this.
+    with data.watch() as stream:
+        # Cooldown is to prevent the page from refreshing too often (but it doesn't throw data away)
+        cooldown = 5
+        start_time = time.time()
+
+        # For each change in the stream
+        for insert_change in stream:
+            # Create a container to hold the data
+            with placeholder.container():
+                # Check if it is still in cooldown and just update the dataframe but don't refresh the page
+                if time.time() - start_time < cooldown:
+                    # Here we deal with the change in the dataframe
+                    update_data()
+                    continue
+                
+                # Otherwise, clear the container and refresh the page
+                placeholder.empty()
+                start_time = time.time()
+                placeholder.container()
+
+                st.title("Highway Traffic Dashboard")
+                # Place here the code to update the views
+                update_numbers_view()
+                update_tables_view()
