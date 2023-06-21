@@ -62,7 +62,7 @@ print("Spark session created")
 
 
 df = (
-    spark.readStream.format("mongodb")
+    spark.read.format("mongodb")
     .option("database", "simulator")
     .option("collection", "positions")
     .schema(readSchema)
@@ -106,9 +106,7 @@ result = (result
 
 # Escreve o resultado das agregações no MongoDB
 query = (
-    result.writeStream.format("mongodb")
-    .trigger(continuous="1 second")
-    .outputMode("append")
+    result.write.format("mongodb")
     .option(
         "spark.mongodb.write.connection.uri",
         "mongodb://root:admin@mongodb:27017",
@@ -116,6 +114,7 @@ query = (
     .option("database", "analysis")
     .option("collection", "aggregations")
     .option("checkpointLocation", "/tmp/checkpoint/")
+    .mode("overwrite")
 )
 
-query.start().awaitTermination()
+query.save()
