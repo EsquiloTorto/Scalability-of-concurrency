@@ -103,8 +103,8 @@ parser.add_argument(
     "-d",
     "--duration",
     type=float,
-    help="Duration (in milliseconds) of each cycle",
-    default=1,
+    help="Duration (in seconds) of each cycle",
+    default=2,
 )
 
 parser.add_argument(

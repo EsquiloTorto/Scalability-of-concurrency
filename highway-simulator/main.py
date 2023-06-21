@@ -1,12 +1,13 @@
-import os
-from dataclasses import dataclass, field
-from random import randint, random, choice
-from args import args
-from time import sleep
-from typing import Optional
-from time import time
+import sys
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from random import choice, randint, random
+from time import sleep, time
+from typing import Optional
+
+from args import args
 from pika.adapters.blocking_connection import BlockingChannel
+
 from broker import get_position_channel
 
 
@@ -344,9 +345,13 @@ if __name__ == "__main__":
         threads=args.threads,
     )
 
-    simulation = Simulation(
-        highway,
-        params,
-        silent=not args.print,
-    )
-    simulation.run()
+    try:
+        simulation = Simulation(
+            highway,
+            params,
+            silent=not args.print,
+        )
+
+        simulation.run()
+    except:
+        sys.exit(1)

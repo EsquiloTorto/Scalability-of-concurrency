@@ -30,7 +30,7 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     deploy:
-      replicas: 2
+      replicas: 1
     depends_on:
       - spark-master
 
@@ -38,24 +38,34 @@ services:
     image: bitnami/mongodb:latest
     hostname: mongodb
     environment:
-      - MONGODB_REPLICA_SET_MODE=primary
-      - MONGODB_ADVERTISED_HOSTNAME=mongodb
-      - MONGODB_ROOT_PASSWORD=admin
-      - MONGODB_REPLICA_SET_KEY=replicaset
-      - MONGODB_EXTRA_FLAGS=--wiredTigerCollectionBlockCompressor=zstd --wiredTigerJournalCompressor=zstd
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ROOT_PASSWORD: admin
+      MONGODB_REPLICA_SET_KEY: replicaset
+      MONGODB_DISABLE_SYSTEM_LOG: 'true'
+      MONGODB_EXTRA_FLAGS: >
+        --wiredTigerCollectionBlockCompressor=zstd
+        --wiredTigerJournalCompressor=zstd
+        --logpath /dev/null
+        --quiet
     ports:
       - 27017:27017 # MongoDB
 
   mongodb-secondary:
     image: bitnami/mongodb:latest
     environment:
-      - MONGODB_REPLICA_SET_MODE=secondary
-      - MONGODB_PORT_NUMBER=27018
-      - MONGODB_INITIAL_PRIMARY_HOST=mongodb
-      - MONGODB_INITIAL_PRIMARY_PORT_NUMBER=27017
-      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=admin
-      - MONGODB_REPLICA_SET_KEY=replicaset
-      - MONGODB_EXTRA_FLAGS=--wiredTigerCollectionBlockCompressor=zstd --wiredTigerJournalCompressor=zstd
+      MONGODB_REPLICA_SET_MODE: secondary
+      MONGODB_PORT_NUMBER: 27018
+      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD: admin
+      MONGODB_REPLICA_SET_KEY: replicaset
+      MONGODB_DISABLE_SYSTEM_LOG: 'true'
+      MONGODB_EXTRA_FLAGS: >
+        --wiredTigerCollectionBlockCompressor=zstd
+        --wiredTigerJournalCompressor=zstd
+        --logpath /dev/null
+        --quiet
     ports:
       - 27018:27018 # MongoDB
     depends_on:
@@ -70,6 +80,7 @@ services:
       - 8081:8081 # Web UI
     depends_on:
       - mongodb-primary
+      - mongodb-secondary
 
   broker:
     build: ./broker
@@ -82,6 +93,7 @@ services:
       - 15672:15672 # Web UI
     depends_on:
       - mongodb-primary
+      - mongodb-secondary
 
   simulator:
     build: ./highway-simulator
@@ -98,3 +110,4 @@ services:
       - 8501:8501 # Web UI
     depends_on:
       - mongodb-primary
+      - mongodb-secondary
