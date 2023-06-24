@@ -114,7 +114,7 @@ query = (
     .option("database", "analysis")
     .option("collection", "aggregations")
     .option("checkpointLocation", "/tmp/checkpoint/")
-    .mode("overwrite")
+    .mode("append")
 )
 
 query.save()

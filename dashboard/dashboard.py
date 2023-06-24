@@ -60,16 +60,27 @@ def update(last_update):
         col3.metric("Veículos acima da velocidade", doc["speeding_count"])
         col4.metric("Veículos em risco de colisão", doc["risky_count"])
 
-        # st.markdown("---")
+        st.markdown("---")
 
-        # col1, col2 = st.columns(2, gap="medium")
+        col1, col2 = st.columns(2, gap="medium")
 
-        # with col1:
-        #     st.subheader("Veículos acima do limite de velocidade")
-        #     st.dataframe(df)
-        # with col2:
-        #     st.subheader("Veículos em risco de colisão")
-        #     st.map(df)
+        with col1:
+            st.subheader("Veículos acima do limite de velocidade")
+            speeding_df = pd.DataFrame({
+                "plate": doc["speeding_vehicles"],
+            })
+
+            st.table(speeding_df)
+
+        with col2:
+            st.subheader("Veículos em risco de colisão")
+
+            risky_df = pd.DataFrame({
+                "plate": doc["risky_vehicles"],
+            })
+
+            st.table(risky_df)
+
 
 
 if __name__ == "__main__":

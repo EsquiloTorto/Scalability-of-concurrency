@@ -99,7 +99,7 @@ services:
     build: ./highway-simulator
     restart: always
     deploy:
-      replicas: 1
+      replicas: 10
     depends_on:
       - broker
 
