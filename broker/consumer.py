@@ -38,7 +38,7 @@ if __name__ == "__main__":
         def callback(_ch, _method, _properties, body):
             message = body.decode("utf-8")
 
-            highway, plate, timestamp, lane, dist = message.split(",")
+            highway, plate, timestamp, lane, dist, in_lane = message.split(",")
             positions_collection.insert_one(
                 {
                     "highway": highway,
@@ -46,6 +46,7 @@ if __name__ == "__main__":
                     "timestamp": timestamp,
                     "lane": lane,
                     "dist": dist,
+                    "in_lane": in_lane,
                 }
             )
 
