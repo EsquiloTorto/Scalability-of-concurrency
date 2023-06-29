@@ -1,6 +1,7 @@
 import pika
 import sys
 import pymongo
+from datetime import datetime
 
 
 def get_rabbitmq_connection():
@@ -40,14 +41,15 @@ if __name__ == "__main__":
         def callback(_ch, _method, _properties, body):
             message = body.decode("utf-8")
 
-            highway, plate, timestamp, lane, dist = message.split(",")
+            highway, plate, timestamp, lane, dist, in_lane = message.split(",")
             positions_collection.insert_one(
                 {
                     "highway": highway,
                     "plate": plate,
-                    "timestamp": timestamp,
-                    "lane": lane,
-                    "dist": dist,
+                    "in_lane": in_lane,
+                    "unix_time": timestamp,
+                    "lane": int(lane),
+                    "dist": int(dist)
                 }
             )
 

@@ -36,6 +36,7 @@ class Vehicle:
     speed: int = 0
     acceleration: int = 0
     collision_time: Optional[int] = None
+    in_lane: Optional[bool] = None
 
     # Método que é chamado quando o veículo colide com outro
     def collide(self, cycle: int):
@@ -126,6 +127,7 @@ class Simulation:
                     new_vehicle = Vehicle(
                         speed=randint(self.params.min_speed, self.params.max_speed),
                         pos=VehiclePosition(lane=lane),
+                        in_lane=True,
                     )
                     vehicles.append(new_vehicle)
 
@@ -230,10 +232,13 @@ class Simulation:
             vehicle.pos.lane = desired_lane
 
             # Se o veículo saiu da rodovia, remove o veículo da lista
-            if vehicle.pos.dist >= self.highway.size:
+            if vehicle.pos.dist >= self.highway.size and vehicle in vehicles:
+                vehicle.in_lane = False
+                self.__notify_position(vehicle)
                 vehicles.remove(vehicle)
             else:
                 self.__notify_position(vehicle)
+
 
         # Cria um executor de threads com o número de threads desejado
         with ThreadPoolExecutor(max_workers=self.params.threads) as executor:
@@ -315,7 +320,7 @@ class Simulation:
         print(f"Collisions:\t{collisions_count:04d}")
 
     def __notify_position(self, vehicle: Vehicle):
-        body = f"{self.highway.name},{vehicle.id},{time()},{vehicle.pos.lane},{vehicle.pos.dist}"
+        body = f"{self.highway.name},{vehicle.id},{time()},{vehicle.pos.lane},{vehicle.pos.dist},{vehicle.in_lane}"
 
         self.position_channel.basic_publish(
             exchange="",
