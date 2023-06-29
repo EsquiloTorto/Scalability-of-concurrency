@@ -20,6 +20,6 @@ if [ $? -ne 0 ]; then
 fi
 
 docker exec \
-  -it esc-spark-master-1 /opt/bitnami/spark/bin/spark-submit \
+  -it a2-spark-master-1 /opt/bitnami/spark/bin/spark-submit \
   --master spark://spark-master:7077 \
   /opt/bitnami/spark/jobs/$JOB_NAME.py

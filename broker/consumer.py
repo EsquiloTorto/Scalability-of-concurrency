@@ -17,9 +17,11 @@ def get_rabbitmq_connection():
 
 def get_mongodb_connection():
     client = pymongo.MongoClient(
-        "mongodb://root:admin@mongodb:27017",
+        "mongodb://root:admin@172.17.0.1:27017",
         replicaSet="replicaset",
+        serverSelectionTimeoutMS=1000,
     )
+
     return client
 
 
@@ -57,5 +59,6 @@ if __name__ == "__main__":
 
         print("Waiting for messages.")
         channel.start_consuming()
-    except:
+    except Exception as e:
+        print(e)
         sys.exit(1)

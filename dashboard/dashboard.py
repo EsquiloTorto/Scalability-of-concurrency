@@ -19,31 +19,25 @@ def init_connection():
 client = init_connection()
 
 
-def get_collection():
-    simulator_db = client["analysis"]
-    collection = simulator_db["aggregations"]
-    return collection
-
-
 @st.cache_resource(ttl=1)
 def get_data():
-    collection = get_collection()
-    df = pd.DataFrame(list(collection.find({})))
-    if len(df) > 0:
-        df["_id"] = df["_id"].astype(str)
+    db = client["analysis"]
 
-    return df
+    highways_count = db["highways_count"].find_one({})["count"]
+    vehicles_count = db["vehicles_count"].find_one({})["count"]
+
+    return {
+        "highways_count": highways_count,
+        "vehicle_count": vehicles_count,
+    }
 
 
-collection = get_collection()
+db = client["analysis"]
 placeholder = st.empty()
 
 
 def update(last_update):
-    df = get_data()
-    if len(df) == 0: return
-
-    doc = df.iloc[-1]
+    data = get_data()
 
     with placeholder.container():
         st.empty()
@@ -55,31 +49,31 @@ def update(last_update):
 
         col1, col2, col3, col4 = st.columns(4)
 
-        col1.metric("Rodovias", doc["total_highways"])
-        col2.metric("Veículos", doc["vehicle_count"])
-        col3.metric("Veículos acima da velocidade", doc["speeding_count"])
-        col4.metric("Veículos em risco de colisão", doc["risky_count"])
+        col1.metric("Rodovias", data["highways_count"])
+        col2.metric("Veículos", data["vehicle_count"])
+        # col3.metric("Veículos acima da velocidade", data["speeding_count"])
+        # col4.metric("Veículos em risco de colisão", data["risky_count"])
 
-        st.markdown("---")
+        # st.markdown("---")
 
-        col1, col2 = st.columns(2, gap="medium")
+        # col1, col2 = st.columns(2, gap="medium")
 
-        with col1:
-            st.subheader("Veículos acima do limite de velocidade")
-            speeding_df = pd.DataFrame({
-                "plate": doc["speeding_vehicles"],
-            })
+        # with col1:
+        #     st.subheader("Veículos acima do limite de velocidade")
+        #     speeding_df = pd.DataFrame({
+        #         "plate": doc["speeding_vehicles"],
+        #     })
 
-            st.table(speeding_df)
+        #     st.table(speeding_df)
 
-        with col2:
-            st.subheader("Veículos em risco de colisão")
+        # with col2:
+        #     st.subheader("Veículos em risco de colisão")
 
-            risky_df = pd.DataFrame({
-                "plate": doc["risky_vehicles"],
-            })
+        #     risky_df = pd.DataFrame({
+        #         "plate": doc["risky_vehicles"],
+        #     })
 
-            st.table(risky_df)
+        #     st.table(risky_df)
 
 
 
@@ -88,7 +82,7 @@ if __name__ == "__main__":
     last_update = time.time()
     update(last_update)
 
-    with collection.watch() as stream:
+    with db.watch() as stream:
         for change in stream:
             if time.time() - last_update > cooldown_s:
                 last_update = time.time()

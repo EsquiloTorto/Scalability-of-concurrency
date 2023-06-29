@@ -1,4 +1,4 @@
-name: esc
+name: a2
 
 services:
   spark-master:
@@ -16,7 +16,6 @@ services:
     volumes:
       - ./jobs:/opt/bitnami/spark/jobs
       - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
-      - ./dashboard:/opt/bitnami/spark/dashboard
 
   spark-worker:
     image: bitnami/spark:latest
@@ -30,16 +29,16 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     deploy:
-      replicas: 1
+      replicas: 2
     depends_on:
       - spark-master
 
   mongodb-primary:
     image: bitnami/mongodb:latest
-    hostname: mongodb
+    network_mode: host
     environment:
       MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ADVERTISED_HOSTNAME: 172.17.0.1
       MONGODB_ROOT_PASSWORD: admin
       MONGODB_REPLICA_SET_KEY: replicaset
       MONGODB_DISABLE_SYSTEM_LOG: 'true'
@@ -53,10 +52,11 @@ services:
 
   mongodb-secondary:
     image: bitnami/mongodb:latest
+    network_mode: host
     environment:
       MONGODB_REPLICA_SET_MODE: secondary
       MONGODB_PORT_NUMBER: 27018
-      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_INITIAL_PRIMARY_HOST: 172.17.0.1
       MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
       MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD: admin
       MONGODB_REPLICA_SET_KEY: replicaset
@@ -75,7 +75,7 @@ services:
     image: mongo-express:latest
     restart: always
     environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://root:admin@mongodb:27017?replicaSet=replicaset
+      - ME_CONFIG_MONGODB_URL=mongodb://root:admin@172.17.0.1:27017?replicaSet=replicaset
     ports:
       - 8081:8081 # Web UI
     depends_on:
@@ -99,7 +99,7 @@ services:
     build: ./highway-simulator
     restart: always
     deploy:
-      replicas: 10
+      replicas: 1
     depends_on:
       - broker
 

@@ -51,7 +51,7 @@ spark: SparkSession = (
     .master("spark://spark-master:7077")
     .config(
         "spark.mongodb.read.connection.uri",
-        "mongodb://root:admin@mongodb:27017",
+        "mongodb://root:admin@172.17.0.1:27017",
     )
     .getOrCreate()
 )
@@ -109,7 +109,7 @@ query = (
     result.write.format("mongodb")
     .option(
         "spark.mongodb.write.connection.uri",
-        "mongodb://root:admin@mongodb:27017",
+        "mongodb://root:admin@172.17.0.1:27017",
     )
     .option("database", "analysis")
     .option("collection", "aggregations")
